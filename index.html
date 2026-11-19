@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>F-15C Eagle 비행 시뮬레이터</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  } }
+  </script>
+</head>
+<body>
+  <div id="view"></div>
+  <canvas id="hud"></canvas>
+  <div id="damage-flash"></div>
+
+  <div id="loading" class="overlay">
+    <div class="load-inner">
+      <div class="load-kicker">TACTICAL AIR COMBAT SIMULATOR</div>
+      <div class="load-brand">F-15C EAGLE</div>
+      <div class="load-rule" aria-hidden="true"><span></span></div>
+      <div id="load-text">지형과 기지를 생성하는 중…</div>
+      <div class="load-bar" role="progressbar" aria-label="불러오는 중"><div id="load-bar"></div></div>
+      <div class="load-foot">1:1 BFM · 6-DOF</div>
+    </div>
+  </div>
+
+  <div id="menu" class="overlay hidden">
+    <div class="brief menu-box">
+      <header class="brief-top">
+        <div class="brief-title">
+          <div class="brief-kicker">MISSION BRIEF — 1 : 1 BFM</div>
+          <div class="brief-brand">F-15C EAGLE</div>
+        </div>
+      </header>
+
+      <div class="brief-scroll">
+      <div class="brief-grid">
+        <section class="brief-col" aria-label="적 난이도 선택">
+          <div class="sec-label">적 난이도</div>
+          <div class="diff-list" role="radiogroup" aria-label="적 난이도">
+            <label class="diff lv1" title="규칙 기반 AI, 미사일 + 기관포. BFM 입문용으로 기본 추적만 수행합니다.">
+              <input type="radio" name="diff" value="rookie">
+              <span class="diff-body">
+                <span class="diff-head"><b>신병</b><small class="wpn">미사일</small><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+                <span class="diff-desc">BFM 입문용. 기본 추적만 수행합니다.</span>
+              </span>
+            </label>
+            <label class="diff lv2" title="규칙 기반 AI, 미사일 + 기관포. 리드·래그 추적과 요요, 브레이크·재킹을 씁니다.">
+              <input type="radio" name="diff" value="veteran" checked>
+              <span class="diff-body">
+                <span class="diff-head"><b>베테랑</b><small class="wpn">미사일</small><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+                <span class="diff-desc">리드·래그 추적과 요요, 브레이크·재킹을 씁니다.</span>
+              </span>
+            </label>
+            <label class="diff lv3" title="규칙 기반 전문가 AI: 최대 G 리드 추적 + 정밀 기총 추적, 오버슛 관리, 정면 교차 리드 턴·사격 회피, 추력 +15%·G 한계 +1. 미사일 + 기관포">
+              <input type="radio" name="diff" value="ace">
+              <span class="diff-body">
+                <span class="diff-head"><b>에이스</b><small class="wpn">미사일</small><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+                <span class="diff-desc">전문가급 추적·회피. 추력 +15% · G 한계 +1.</span>
+              </span>
+            </label>
+            <label class="diff lv4" title="강화학습 AI — 전설과 같은 정책에 핸디캡(반응 지연 0.3초·조종 잡음·최대 G 85%·조준 유지 0.5초), 추력 +8%·G 한계 +0.5. 기관포만">
+              <input type="radio" name="diff" value="elite">
+              <span class="diff-body">
+                <span class="diff-head"><b>엘리트</b><small class="wpn gun">기총</small><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+                <span class="diff-desc">강화학습 정책의 약화판. 추력 +8% · G 한계 +0.5.</span>
+              </span>
+            </label>
+            <label class="diff lv5" title="강화학습(셀프플레이) 최종 정책, 추력 +15%·G 한계 +1. 기관포만">
+              <input type="radio" name="diff" value="legend">
+              <span class="diff-body">
+                <span class="diff-head"><b>전설</b><small class="wpn gun">기총</small><span class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+                <span class="diff-desc">셀프플레이 최종 정책. 추력 +15% · G 한계 +1.</span>
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section class="brief-col" aria-label="조작과 환경 설정">
+          <div class="sec-label">조작 방식</div>
+          <div class="scheme-list" role="radiogroup" aria-label="조작 방식">
+            <label class="scheme" title="키보드 비행"><input type="radio" name="scheme" value="bf" checked><span class="scheme-body"><b>배틀필드식</b></span></label>
+            <label class="scheme" title="마우스 비행"><input type="radio" name="scheme" value="bfmouse"><span class="scheme-body"><b>마우스식</b></span></label>
+            <label class="scheme" title="키보드 스틱"><input type="radio" name="scheme" value="classic"><span class="scheme-body"><b>클래식</b></span></label>
+            <label class="scheme custom" title="직접 지정"><input type="radio" name="scheme" value="custom"><span class="scheme-body"><b>커스텀</b></span><button type="button" id="btn-keybind" class="mini">키·마우스 설정…</button></label>
+          </div>
+          <details class="scheme-details">
+            <summary><span class="sum-title">감도 · 반전</span></summary>
+            <div class="scheme-sub">
+              <label class="mouse-only line"><span class="line-label">마우스 감도</span><input type="range" id="opt-sens" min="0.3" max="2.5" step="0.1" value="1"> <span id="sens-val" class="mono">1.0×</span></label>
+              <label class="bf-only line check"><input type="checkbox" id="opt-invert"><span>피치 반전 <em>(키보드 ↑ = 기수 올림 / 마우스 위 = 기수 내림)</em></span></label>
+            </div>
+          </details>
+
+          <div class="env-row">
+          <div class="env-block">
+          <div class="sec-label">품질</div>
+          <div class="quality-row">
+            <select id="opt-quality" aria-label="그래픽 품질" title="중간 = 노트북 60fps 목표">
+              <option value="low">낮음</option>
+              <option value="medium">중간</option>
+              <option value="high" selected>높음</option>
+              <option value="ultra">울트라</option>
+            </select>
+          </div>
+          </div>
+
+          <div class="env-block grow">
+          <div class="sec-label">옵션</div>
+          <div class="toggle-grid">
+            <label class="toggle"><input type="checkbox" id="opt-cas" checked><span>CAS 조종증강</span></label>
+            <label class="toggle"><input type="checkbox" id="opt-g" checked><span>G 효과</span></label>
+            <label class="toggle"><input type="checkbox" id="opt-fuel"><span>무한 연료</span></label>
+            <label class="toggle"><input type="checkbox" id="opt-ammo"><span>무한 탄약</span></label>
+            <label class="toggle"><input type="checkbox" id="opt-cockpit"><span>1인칭 전용</span></label>
+            <label class="toggle"><input type="checkbox" id="opt-target-toggle"><span>추적 R 토글</span></label>
+            <label class="toggle wide"><input type="checkbox" id="opt-sound" checked><span>사운드</span></label>
+          </div>
+          </div>
+          </div>
+        </section>
+      </div>
+
+      <details class="keys-details">
+        <summary><span class="sum-title">조작표</span></summary>
+          <section class="keys">
+            <table id="keys-bf">
+              <tr><th colspan="2">비행 (배틀필드식 키보드)</th><th colspan="2">무장 · 시스템</th></tr>
+              <tr><td>↑ / ↓ (숫자패드 8/2)</td><td>피치 (↓ = 기수 올림)</td><td>Space · 좌클릭</td><td>기관포</td></tr>
+              <tr><td>← / → (숫자패드 4/6)</td><td>롤</td><td>F · 우클릭</td><td>미사일 발사</td></tr>
+              <tr><td>A / D</td><td>러더 (요)</td><td>1 / 2, E</td><td>AIM-9X / AIM-120 선택, 전환</td></tr>
+              <tr><td>W / S</td><td>스로틀 증가 / 감소 (MIL까지)</td><td>Q</td><td>레이더 록온 (표적 전환)</td></tr>
+              <tr><td>Shift (누름)</td><td>애프터버너</td><td>X</td><td>플레어 + 채프</td></tr>
+              <tr><td>S (아이들에서 누름)</td><td>에어브레이크 / 휠 브레이크</td><td>G / V / B</td><td>기어 / 플랩 / 스피드브레이크</td></tr>
+              <tr><td>C</td><td>시점: 1인칭/3인칭/적 추적</td><td>K · [ ]</td><td>CAS ON/OFF · 트림</td></tr>
+              <tr><td>R (누름)</td><td>적 추적 시점 (조종석: 적에게 시선)</td><td>Y · =</td><td>패드락 · 레이더 거리(AUTO/2~80 NM)</td></tr>
+              <tr><td>Alt + 마우스 · 휠</td><td>둘러보기 · 줌</td><td></td><td></td></tr>
+              <tr><td>Esc / P</td><td>일시정지</td><td>I / O / H</td><td>텔레메트리 / HUD / 도움말</td></tr>
+            </table>
+            <table id="keys-bfmouse" class="hidden">
+              <tr><th colspan="2">비행 (배틀필드식 마우스)</th><th colspan="2">무장 · 시스템</th></tr>
+              <tr><td>마우스 상하</td><td>피치 (기수 올림/내림)</td><td>좌클릭</td><td>기관포</td></tr>
+              <tr><td>마우스 좌우</td><td>롤</td><td>우클릭 · F</td><td>미사일 발사</td></tr>
+              <tr><td>A / D</td><td>러더 (요)</td><td>1 / 2, E</td><td>AIM-9X / AIM-120 선택, 전환</td></tr>
+              <tr><td>W / S</td><td>스로틀 증가 / 감소 (MIL까지)</td><td>Q</td><td>록온 (표적 전환)</td></tr>
+              <tr><td>Shift (누름)</td><td>애프터버너</td><td>X</td><td>플레어 + 채프</td></tr>
+              <tr><td>S (아이들에서 누름)</td><td>에어브레이크 / 휠 브레이크</td><td>G / V / B</td><td>기어 / 플랩 / 스피드브레이크</td></tr>
+              <tr><td>방향키</td><td>피치/롤 보조 (키보드)</td><td>K · [ ]</td><td>CAS ON/OFF · 트림</td></tr>
+              <tr><td>C · R(누름)</td><td>시점 전환 · 적 추적 시점</td><td>Y</td><td>패드락 (록 표적 주시)</td></tr>
+              <tr><td>Alt · 휠클릭 (누름)</td><td>자유 시점 · 휠: 줌</td><td>I / O / =</td><td>텔레메트리 / HUD / 레이더 범위</td></tr>
+              <tr><td>Esc / P</td><td>일시정지 (마우스 해제)</td><td>H</td><td>도움말 (화면 클릭 = 마우스 잠금)</td></tr>
+            </table>
+            <table id="keys-custom" class="hidden"></table>
+            <table id="keys-classic" class="hidden">
+              <tr><th colspan="2">비행 (클래식)</th><th colspan="2">무장 · 시스템</th></tr>
+              <tr><td>W / S (↑/↓)</td><td>피치 (S = 당김)</td><td>1 / 2 / 3, M</td><td>기관포 / AIM-9X / AIM-120 선택</td></tr>
+              <tr><td>A / D (←/→)</td><td>롤</td><td>Space · 좌클릭</td><td>기관포 발사</td></tr>
+              <tr><td>Q / E</td><td>러더 (요)</td><td>X</td><td>미사일 발사</td></tr>
+              <tr><td>Shift + 조종</td><td>정밀 조종 (40%)</td><td>T</td><td>레이더 록 / 표적 전환</td></tr>
+              <tr><td>R / F</td><td>스로틀 증감 (MIL 디텐트 → R 재입력 시 A/B)</td><td>Z</td><td>플레어 + 채프</td></tr>
+              <tr><td>G / V / B</td><td>기어 / 플랩 / 스피드브레이크</td><td>K</td><td>CAS ON/OFF</td></tr>
+              <tr><td>N (누름)</td><td>휠 브레이크</td><td>[ / ]</td><td>피치 트림 (CAS OFF)</td></tr>
+              <tr><td>C · L(누름)</td><td>시점 전환 · 적 추적 시점</td><td>Y</td><td>패드락 (록 표적 주시)</td></tr>
+              <tr><td>우클릭 드래그 · 휠</td><td>둘러보기 · 줌</td><td>I / O / =</td><td>텔레메트리 / HUD / 레이더 범위</td></tr>
+              <tr><td>P / Esc</td><td>일시정지</td><td>H</td><td>도움말</td></tr>
+            </table>
+            <p class="note">게임패드 지원: 왼쪽 스틱 피치/롤, 오른쪽 스틱 요, RT/LT 스로틀, A 기관포, B 미사일, X 플레어, Y 록, LB 무장 전환, RB 시점.</p>
+          </section>
+        </details>
+      </div>
+      <footer class="brief-launch">
+        <div class="launch-zone">
+          <section class="modes">
+            <button class="mode wide launch" data-mode="bfm"><b>출격</b><span class="launch-sub">정면 출발 · 머지 후 교전 <span id="bfm-wpn"></span></span></button>
+          </section>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div id="keybind" class="overlay hidden">
+    <div class="panel small-box wide kb-box">
+      <header class="panel-head">
+        <div><div class="panel-kicker">CUSTOM CONTROL</div><h2>커스텀 조작 설정</h2></div>
+        <span class="panel-tag">브라우저에 저장</span>
+      </header>
+      <div class="kb-row">
+        <label>프리셋에서 불러오기
+          <select id="kb-preset"><option value="">선택…</option><option value="bf">배틀필드식 (키보드)</option><option value="bfmouse">배틀필드식 (마우스 비행)</option><option value="classic">클래식</option></select></label>
+        <label>스로틀 방식
+          <select id="kb-throttle"><option value="hold">MIL까지 + 애프터버너 키 누름</option><option value="detent">연속 (MIL에서 멈춤, 다시 누르면 A/B)</option></select></label>
+      </div>
+      <fieldset class="kb-mouse">
+        <legend>마우스</legend>
+        <label><input type="checkbox" id="kb-mflight"> 마우스로 비행 (화면 클릭 = 포인터 잠금)</label>
+        <label>좌우 이동 <select id="kb-xaxis"><option value="roll">롤</option><option value="yaw">러더 (요)</option></select></label>
+        <label>감도 <input type="range" id="kb-sens" min="0.3" max="2.5" step="0.1"> <span id="kb-sens-val" class="mono"></span></label>
+        <label>상하 감도 배율 <input type="range" id="kb-ysens" min="0.5" max="2" step="0.1"> <span id="kb-ysens-val" class="mono"></span></label>
+        <label title="마우스를 멈췄을 때 스틱이 중립으로 돌아오는 빠르기. 0이면 스틱이 그 자리에 머묾(가상 조종간)">중립 복귀 <input type="range" id="kb-recenter" min="0" max="12" step="0.5"> <span id="kb-recenter-val" class="mono"></span></label>
+        <label><input type="checkbox" id="kb-invert"> 상하 반전 (마우스 위 = 기수 내림)</label>
+      </fieldset>
+      <p class="kb-hint">칸을 누른 뒤 지정할 키나 마우스 버튼(좌·우·휠·4·5번)을 누르세요. <b>Esc</b> = 취소, <b>Backspace / Delete</b> = 지우기. 이미 다른 동작에 쓰인 키는 그 동작에서 옮겨 옵니다.</p>
+      <p id="kb-msg" class="kb-msg" role="status"></p>
+      <div class="kb-table-wrap"><table id="kb-table"></table></div>
+      <div class="panel-foot"><button id="kb-close">완료</button></div>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="panel small-box">
+      <div class="panel-kicker">PAUSED — HOLDING</div>
+      <h2>일시정지</h2>
+      <button id="btn-resume" class="primary">계속 (P)</button>
+      <button id="btn-restart">다시 시작</button>
+      <button id="btn-menu">메인 메뉴</button>
+    </div>
+  </div>
+
+  <div id="end" class="overlay hidden">
+    <div class="panel small-box end-box">
+      <div class="panel-kicker">DEBRIEF</div>
+      <h2 id="end-title">임무 종료</h2>
+      <p id="end-reason"></p>
+      <div class="end-stats-box"><p id="end-stats"></p></div>
+      <button id="btn-end-restart" class="primary">다시 시작 (Enter)</button>
+      <button id="btn-end-menu">메인 메뉴</button>
+    </div>
+  </div>
+
+  <div id="help" class="overlay hidden">
+    <div class="panel small-box wide help-box">
+      <header class="panel-head">
+        <div><div class="panel-kicker">PILOT REFERENCE</div><h2>조종 요령</h2></div>
+        <span class="panel-tag">H — 닫기</span>
+      </header>
+      <ul>
+        <li><b>키보드 비행:</b> 방향키를 누르는 동안 스틱이 점점 깊게 들어가고, 떼면 중립으로 돌아옵니다. 짧게 톡톡 치면 미세 조정, 길게 누르면 최대 기동. 선회는 ←/→로 경사를 준 뒤 ↓를 눌러 당기세요. Alt를 누른 채 마우스를 움직이면 둘러볼 수 있습니다.</li>
+        <li><b>레이더:</b> 우측 하단 스코프는 기수 ±60°를 좌우로 훑는 공대공 레이더입니다. 빔이 지나갈 때 잡힌 적만 표시되고(산 뒤는 안 보임), 갱신되지 않으면 흐려집니다. 10 km 안에서 눈에 보이는 적은 노란 마름모(육안 접촉)로 후방까지 표시되고, 스코프 밖이면 테두리 화살표로 방향을 알려줍니다. 거리 눈금은 기본 AUTO(가장 가까운 적에 맞춰 2~80 NM 자동), = 키로 수동 전환. Q로 록온하면 STT로 표적만 추적하며, 근거리(10 NM 이내, 기수 30° 안)는 트랙 없이도 바로 록됩니다.</li>
+        <li><b>적 추적 시점:</b> R(클래식: L)을 누르고 있는 동안 내 기체 뒤에서 적을 바라보는 시점이 됩니다. C로 '적 추적' 시점을 고정할 수도 있습니다. 조종석에서는 시선만 적에게 돌아갑니다.</li>
+        <li><b>난이도:</b> 신병 → 베테랑 → 에이스 → 엘리트 → 전설. 신병·베테랑은 규칙 기반 BFM(리드/래그 추적, 요요, 브레이크·재킹). 에이스는 규칙 기반 전문가 AI로 최대 G 리드 추적과 정밀 기총 추적으로 꼬리를 잡아 마무리하고, 정면 교차 리드 턴·사격 회피를 씁니다(추력 +15%, G 한계 +1). 엘리트와 전설은 강화학습(셀프플레이) AI입니다: 전설은 최종 정책, 엘리트는 같은 정책에 반응 지연·조종 잡음·G 제한을 건 약화판(추력 +8%, G 한계 +0.5).</li>
+        <li><b>1:1 공중전:</b> 정면으로 마주 보고 지나친 직후 FIGHT'S ON. 그 전에는 서로 사격·발사할 수 없습니다. 신병·베테랑·에이스는 미사일(AIM-9X·AIM-120)과 기관포, 엘리트·전설은 기관포만 씁니다. 머지 직후 바로 당겨 선회하고, 코너 속도(약 330 kt)를 지키며 적의 후방을 잡으세요.</li>
+        <li><b>커스텀 조작:</b> 메뉴의 '키·마우스 설정…'에서 동작마다 키·마우스 버튼을 두 개까지 지정하고, 마우스 비행(축 배정·감도·중립 복귀)과 스로틀 방식을 고를 수 있습니다. 설정은 브라우저에 저장됩니다.</li>
+        <li><b>CAS ON:</b> 스틱은 하중배수(G)를 명령합니다. 중립 = 1G, 최대 당김 = 9G(중량에 따라 감소), 받음각은 30°로 제한됩니다.</li>
+        <li><b>CAS OFF:</b> 스태빌레이터가 스틱에 직결됩니다. G 제한이 없어 13.5G를 넘으면 기체가 파손되며, 고받음각에서 방향 안정성이 사라져 이탈/스핀이 일어날 수 있습니다.</li>
+        <li><b>에너지 관리:</b> 고 G 선회는 유도항력으로 속도를 빠르게 잃습니다. 코너 속도(약 320~350 kt) 부근이 최대 순간 선회율입니다.</li>
+        <li><b>G 효과:</b> 6G 이상 지속 시 시야가 좁아지고(그레이아웃) 계속되면 G-LOC으로 4초간 의식을 잃습니다.</li>
+        <li><b>미사일:</b> AIM-9X는 탐색기 톤(높은 음)을 확인하고 발사. AIM-120은 Q(클래식: T)로 레이더 록 후 DLZ 안에서 'SHOOT' 표시 시 발사.</li>
+        <li><b>방어:</b> 'MISSILE' 경보 시 미사일을 3시/9시 방향(빔)에 두고 급선회하며 X(클래식: Z)로 플레어/채프. A/B를 끄면 열추적 미사일 기만률이 오릅니다.</li>
+      </ul>
+      <div class="panel-foot"><button id="btn-help-close">닫기 (H)</button></div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.claude/settings.local.json
+
+# Root scratch scripts
+/check_*.py
+/probe_*.py
+/probe_out.txt
+
+# RL: checkpoints, recorded fights, logs (large or local-only)
+rl/ckpt/
+rl/data/
+rl/*.txt
+rl/*_backup*
+rl/gfx_backup_*/
+rl/gfx_review/
+
+# Blender: renders and archived rounds (scripts and spec are kept)
+rl/blender/*.png
+rl/blender/*.jpg
+rl/blender/round*/
+rl/blender/v2/
+
+# Old v1 GLB (the game loads src/models/f15c_v2.glb)
+src/models/f15c.glb
